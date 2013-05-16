@@ -1,0 +1,5 @@
+#Scons stuff
+/.sconsign.dblite
+/output
+/xcode/kompute.xcodeproj/*
+!/xcode/kompute.xcodeproj/project.pbxproj
