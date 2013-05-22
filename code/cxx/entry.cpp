@@ -8,7 +8,7 @@
 #include <thread>
 #include <setjmp.h>
 #include <assert.h>
-
+#include <stdio.h>
 #include "setjmp.h"
 
 namespace koroutine
@@ -133,8 +133,8 @@ namespace koroutine
 		{
 			assert(!m_buffValid && "koroutine is dying, but we still have a valid jmp buff");
 		}
-		//The current thread starts executing the stored context
-		//The calling context is then stored in this
+		//The current thread starts executing the stored kontext
+		//The calling kontext is then stored in this
 		void xchange()
 		{
 			assert(m_buffValid);
@@ -149,67 +149,143 @@ namespace koroutine
 };
 
 namespace kompute{
-	//Execution context - coroutine
+	//Execution kontext - coroutine
 	
 	class kontext;
 	
 	typedef std::function<void (kontext &)> processor;
 	
+	class thread_pool
+	{
+		std::vector<std::thread> m_pool;
+	public:
+		thread_pool(std::function<std::function<void(void)>(void)>);
+		~thread_pool();
+	};
+}
+namespace kompute {
+	
 	class kontext
 	{
 	private:
-		kontext * m_parentKtx;
-		kontext * m_rootKtx;
-		processor m_processor;
-		processor & proc() {return m_processor;}
-		kontext * parent(){return m_parentKtx;}
-		kontext * root(){return m_rootKtx;}
-		std::unique_ptr<koroutine::koroutine> m_koroutine;
+		//processor m_processor;
+		//processor & proc() {return m_processor;}
+
+		std::unique_ptr<thread_pool> m_pool;
+		void worker(size_t workerID);
+		
+		std::mutex m_workerMutex;
+		std::condition_variable m_workerCondition;
+		size_t m_nTotalWorkers;
+		
+		struct Job
+		{
+			std::unique_ptr<koroutine::koroutine> job_routine;
+		};
+		
+		std::vector<Job> m_readyQ;
+		std::mutex m_readyQMutex;
+		std::condition_variable m_readyQCondition;
+		bool m_bWorkerQuit;
+		
 		
 	public:
-		kontext(processor p);
-		kontext(kontext * parent, processor p);
-		const koroutine::koroutine & koroutine() {return *m_koroutine;}
+		kontext();
+		//kontext(kontext * parent);
+
+		const koroutine::koroutine & koroutine() {return *m_readyQ[0].job_routine;}
 		virtual ~kontext();
 	};
 
 	static void spawn(processor);
 };
 
-
-#include <stdio.h>
 using namespace kompute;
 
+thread_pool::thread_pool(std::function<std::function<void(void)>(void)> createWorker)
+{
+	auto nCores = std::thread::hardware_concurrency();
+	if (nCores == 0)
+	{
+		nCores = 16;
+	}
+	
+	printf("Cores %u\n", nCores);
+	
+	while (nCores--) {
+		m_pool.emplace_back(std::thread(createWorker()));
+	}
+}
+
+thread_pool::~thread_pool()
+{
+	for(auto & thread: m_pool)
+	{
+		if (thread.joinable())
+			thread.join();
+	}
+}
+
+
 void kompute::spawn(kompute::processor p){
-	kontext k(p);
+	kontext k;
 }
 
-kontext::kontext(processor p)
+kontext::kontext()
 {
-	m_parentKtx = nullptr;
-	m_rootKtx = this;
-	m_processor = p;
-	decltype(m_koroutine) routine(new koroutine::koroutine(koroutine::stack(), [this] (koroutine::koroutine *) {
+	m_bWorkerQuit = false;
+	m_nTotalWorkers = 0;
+	m_pool.reset(new thread_pool([this] () {
+		size_t id;
+		{
+			std::unique_lock<std::mutex> lock(m_workerMutex);
+			id = m_nTotalWorkers++;
+			m_workerCondition.notify_one();
+		}
+		return [this, id] () {
+			this->worker(id);
+			{
+				std::unique_lock<std::mutex> lock(m_workerMutex);
+				m_nTotalWorkers--;
+				m_workerCondition.notify_one();
+			}
+		};
+	}));
+	/*
+	m_koroutine.reset(new koroutine::koroutine(koroutine::stack(), [this] (koroutine::koroutine *) {
 		m_processor(*this);
 	}));
-	m_koroutine.swap(routine);
 	m_koroutine->xchange();
+	 */
 }
 
-kontext::kontext(kontext * parent, processor p)
+void kontext::worker(size_t workerID)
 {
-	m_parentKtx = parent;
-	m_rootKtx = parent->root();
-	m_processor = p;
-	decltype(m_koroutine) routine(new koroutine::koroutine(koroutine::stack(), [this] (koroutine::koroutine *) {
-		m_processor(*this);
-	}));
-	m_koroutine.swap(routine);
+	printf("Enter Worker %d\n", (int)workerID);
+	{
+		std::unique_lock<std::mutex> lock(m_readyQMutex);
+		while (!m_bWorkerQuit && !m_readyQ.size())
+		{
+			m_readyQCondition.wait(lock);
+		}
+	}
+	printf("Exit Worker %d\n", (int)workerID);
 }
 
 kontext::~kontext()
 {
-	
+	{
+		std::unique_lock<std::mutex> lock(m_readyQMutex);
+		m_bWorkerQuit = true;
+		m_readyQCondition.notify_all();
+	}
+	{
+		std::unique_lock<std::mutex> lock(m_workerMutex);
+		while(m_nTotalWorkers)
+		{
+			m_workerCondition.wait(lock);
+		}
+	}
 }
 
 int main() {
