@@ -6,16 +6,36 @@
 	objectVersion = 46;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		0A590F25176266E600749D94 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0A590F21176266E600749D94 /* Code.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 0A94236D1758167D00C93B0E;
+			remoteInfo = Code;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		0A2E8BC01744B2B600F68346 /* kompute */ = {isa = PBXFileReference; lastKnownFileType = folder; name = kompute; path = ../..; sourceTree = "<group>"; };
+		0A590F21176266E600749D94 /* Code.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Code.xcodeproj; path = Code/Code.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		0A05F37E1744AC6E00C76904 = {
 			isa = PBXGroup;
 			children = (
+				0A590F21176266E600749D94 /* Code.xcodeproj */,
 				0A2E8BC01744B2B600F68346 /* kompute */,
 			);
+			sourceTree = "<group>";
+		};
+		0A590F22176266E600749D94 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0A590F26176266E600749D94 /* Code */,
+			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -53,12 +73,28 @@
 			);
 			mainGroup = 0A05F37E1744AC6E00C76904;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = 0A590F22176266E600749D94 /* Products */;
+					ProjectRef = 0A590F21176266E600749D94 /* Code.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				0A05F3831744AC6E00C76904 /* kompute */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXReferenceProxy section */
+		0A590F26176266E600749D94 /* Code */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = Code;
+			remoteRef = 0A590F25176266E600749D94 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
 
 /* Begin XCBuildConfiguration section */
 		0A05F3841744AC6E00C76904 /* Debug */ = {
