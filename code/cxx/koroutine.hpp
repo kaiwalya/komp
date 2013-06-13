@@ -15,8 +15,32 @@
 #include <functional>
 #include <memory>
 
-namespace ko
+namespace koro
 {
+	class ktx;
+	class koroutine;
+	class koroutine_accessor;
+	
+	/*
+	Handle to a koroutine
+	*/
+	class koroutine_accessor
+	{
+		
+	};
+	
+	/*
+	koroutine
+	*/
+	class koroutine
+	{
+	public:
+		koroutine_accessor * create(std::function<void(koroutine &)>);
+		void yieldTo(koroutine_accessor * other);
+		void exitTo(koroutine_accessor * other);
+		virtual ~koroutine();
+	};
+	
 	/**
 	 The root kontext. Entry point to access most of the api
 	 */
@@ -37,7 +61,6 @@ namespace ko
 		Factory to create ktx instances. Use on calling thread only
 		*/
 		static ktx * create();
-
 	};
 	
 }

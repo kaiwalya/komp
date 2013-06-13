@@ -11,7 +11,7 @@
 
 #include <assert.h>
 
-namespace ko {
+namespace koro {
 	stack::stack(size_t szWanted, const size_t roundOff)
 	{
 		//Roundoff szWanted, and then add more padding so we can shift the pointer if we want

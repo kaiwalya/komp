@@ -9,8 +9,11 @@
 /* Begin PBXBuildFile section */
 		0A590F2B1762681200749D94 /* stack.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A590F2A1762681200749D94 /* stack.cpp */; };
 		0A590F2F176269A000749D94 /* koroutine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A590F2E176269A000749D94 /* koroutine.cpp */; };
-		0A590F3217626F3600749D94 /* ko.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A590F3017626F3600749D94 /* ko.cpp */; };
+		0A84D07817669BFC00FAFB5C /* kompute.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A84D07717669BFC00FAFB5C /* kompute.cpp */; };
 		0A94238D1758176000C93B0E /* entry.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A9423871758175700C93B0E /* entry.cpp */; };
+		0AA4345417680E9A006452B9 /* komp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0AA4345317680E99006452B9 /* komp.cpp */; };
+		0AA4345717680ED1006452B9 /* koro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0AA4345617680ED1006452B9 /* koro.cpp */; };
+		0AA4345917699A88006452B9 /* tutil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0AA4345817699A87006452B9 /* tutil.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -28,7 +31,7 @@
 /* Begin PBXFileReference section */
 		0A590F2A1762681200749D94 /* stack.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = stack.cpp; sourceTree = "<group>"; };
 		0A590F2E176269A000749D94 /* koroutine.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = koroutine.cpp; sourceTree = "<group>"; };
-		0A590F3017626F3600749D94 /* ko.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ko.cpp; sourceTree = "<group>"; };
+		0A84D07717669BFC00FAFB5C /* kompute.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = kompute.cpp; sourceTree = "<group>"; };
 		0A94236D1758167D00C93B0E /* Code */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Code; sourceTree = BUILT_PRODUCTS_DIR; };
 		0A9423721758175700C93B0E /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		0A9423741758175700C93B0E /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
@@ -42,6 +45,9 @@
 		0A9423871758175700C93B0E /* entry.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = entry.cpp; sourceTree = "<group>"; };
 		0A9423891758175700C93B0E /* SConscript */ = {isa = PBXFileReference; lastKnownFileType = text; path = SConscript; sourceTree = "<group>"; };
 		0A94238A1758175700C93B0E /* README.md */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.md; sourceTree = "<group>"; };
+		0AA4345317680E99006452B9 /* komp.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = komp.cpp; sourceTree = "<group>"; };
+		0AA4345617680ED1006452B9 /* koro.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = koro.cpp; sourceTree = "<group>"; };
+		0AA4345817699A87006452B9 /* tutil.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tutil.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -155,7 +161,10 @@
 		0A9423861758175700C93B0E /* cxx */ = {
 			isa = PBXGroup;
 			children = (
-				0A590F3017626F3600749D94 /* ko.cpp */,
+				0AA4345817699A87006452B9 /* tutil.cpp */,
+				0AA4345617680ED1006452B9 /* koro.cpp */,
+				0AA4345317680E99006452B9 /* komp.cpp */,
+				0A84D07717669BFC00FAFB5C /* kompute.cpp */,
 				0A590F2E176269A000749D94 /* koroutine.cpp */,
 				0A590F2A1762681200749D94 /* stack.cpp */,
 				0A9423871758175700C93B0E /* entry.cpp */,
@@ -234,7 +243,10 @@
 				0A94238D1758176000C93B0E /* entry.cpp in Sources */,
 				0A590F2B1762681200749D94 /* stack.cpp in Sources */,
 				0A590F2F176269A000749D94 /* koroutine.cpp in Sources */,
-				0A590F3217626F3600749D94 /* ko.cpp in Sources */,
+				0A84D07817669BFC00FAFB5C /* kompute.cpp in Sources */,
+				0AA4345417680E9A006452B9 /* komp.cpp in Sources */,
+				0AA4345717680ED1006452B9 /* koro.cpp in Sources */,
+				0AA4345917699A88006452B9 /* tutil.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

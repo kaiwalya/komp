@@ -14,7 +14,7 @@
 #include <cstring>
 #include <stdint.h>
 
-namespace ko
+namespace koro
 {
 	/**
 	 Represents a memory block allocated on the heap which can be used as a stack for coroutines.

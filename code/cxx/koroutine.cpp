@@ -1,15 +1,15 @@
 #include "koroutine.hpp"
 
 
-#include "ko.hpp"
+#include "koro.hpp"
 /////////
 //def ktx
 //
-namespace ko
+namespace koro
 {
 	ktx * ktx::create()
 	{
-		return (new ctx)->getCurrentThreadContext();
+		return new ctx_thread();
 	}
 	ktx::ktx(){}
 	ktx::~ktx(){}
