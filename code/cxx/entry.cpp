@@ -72,16 +72,6 @@ void komp_mq_ktx_ParellelTest(komp::mq::ktx * ktxIn)
  
  */
 
-class global
-{
-	
-};
-
-class local
-{
-	
-};
-
 #include <assert.h>
 
 int main(int argc, char ** argv)
@@ -108,6 +98,7 @@ int main(int argc, char ** argv)
 	*/
 	
 	komp::thread::test();
+	komp::mq::test();
 }
 
 

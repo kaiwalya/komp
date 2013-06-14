@@ -17,4 +17,5 @@ env.Append(LINKFLAGS=['-std=c++11', '-stdlib=libc++']);
 #for key in ['CC', 'CXX', 'CFLAGS', 'CXXFLAGS']:
 #	print "%s = %s" % (key, dict[key])
 
-env.Program(target = 'kompute', source = ["cxx/entry.cpp", "cxx/stack.cpp", "cxx/koroutine.cpp", "cxx/koro.cpp", "cxx/kompute.cpp", "cxx/komp.cpp", "cxx/])
+env.Program(target = 'kompute', source = ["cxx/entry.cpp", "cxx/stack.cpp", "cxx/koroutine.cpp", "cxx/koro.cpp", "cxx/kompute.cpp", "cxx/komp.cpp", "cxx/tutil.cpp"])
+
