@@ -28,11 +28,11 @@ namespace komp
 		public:
 			localized(tshared * shared): m_shared(shared)
 			{
-				shared->tlocalcontext_attach(static_cast<tlocal*>(this));
+				//shared->tlocalcontext_attach(static_cast<tlocal*>(this));
 			}
 			~localized()
 			{
-				m_shared->tlocalcontext_detach(static_cast<tlocal*>(this));
+				//m_shared->tlocalcontext_detach(static_cast<tlocal*>(this));
 			}
 			
 			tshared * tsharedcontext()
@@ -57,6 +57,24 @@ namespace komp
 			{
 				return new tlocal(m_shared);
 			}
+			
+		protected:
+			virtual void tlocalcontext_attach_locked(tlocal * local)
+			{
+				auto tid = std::this_thread::get_id();
+				assert(m_localmap.find(tid) == m_localmap.end());
+				m_localmap.emplace(std::make_pair(tid, local));
+			}
+			
+			virtual void tlocalcontext_detach_locked(tlocal * local)
+			{
+				auto tid = std::this_thread::get_id();
+				assert(m_localmap.find(tid) != m_localmap.end());
+				assert(m_localmap[tid] == local);
+				m_localmap.erase(tid);
+			}
+			
+			
 		public:
 			typedef std::mutex mutex_type;
 			typedef std::unique_lock<mutex_type> lock_type;
@@ -90,10 +108,11 @@ namespace komp
 			
 			void tlocalcontext_attach(tlocal * local)
 			{
-				auto tid = std::this_thread::get_id();
+				
 				auto lock = tsharedcontext_lock();
-				assert(m_localmap.find(tid) == m_localmap.end());
-				m_localmap.emplace(std::make_pair(tid, local));
+				{
+					tlocalcontext_attach_locked(local);
+				}
 			}
 			
 			/*
@@ -110,13 +129,12 @@ namespace komp
 			void tlocalcontext_detach(tlocal * local)
 			{
 				bool bDelete = false;
-				auto tid = std::this_thread::get_id();
 				{
 					auto lock = tsharedcontext_lock();
-					assert(m_localmap.find(tid) != m_localmap.end());
-					assert(m_localmap[tid] == local);
-					m_localmap.erase(tid);
-					if(!m_localmap.size()) bDelete = true;
+					{
+						tlocalcontext_detach_locked(local);
+						if(!m_localmap.size()) bDelete = true;
+					}
 				}
 				if (bDelete) delete this;
 			}

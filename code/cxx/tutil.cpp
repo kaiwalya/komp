@@ -34,22 +34,8 @@ namespace komp
 			}
 		}
 		
-		class test_localize_shared;
-		class test_localize_local: public localized<test_localize_shared, test_localize_local>
-		{
+		class test_localize_local;
 
-		public:
-			test_localize_local(test_localize_shared * shared)
-			:localized<komp::thread::test_localize_shared, komp::thread::test_localize_local>(shared)
-			{
-				thisCheckpoint();
-			}
-			
-			~test_localize_local()
-			{
-				thisCheckpoint();
-			}
-		};
 		
 		class test_localize_shared: public localizable<test_localize_shared, test_localize_local>
 		{
@@ -61,6 +47,24 @@ namespace komp
 			
 			~test_localize_shared()
 			{
+				thisCheckpoint();
+			}
+		};
+		
+		class test_localize_local: public localized<test_localize_shared, test_localize_local>
+		{
+			
+		public:
+			test_localize_local(test_localize_shared * shared)
+			:localized<komp::thread::test_localize_shared, komp::thread::test_localize_local>(shared)
+			{
+				tsharedcontext()->tlocalcontext_attach(this);
+				thisCheckpoint();
+			}
+			
+			~test_localize_local()
+			{
+				tsharedcontext()->tlocalcontext_detach(this);
 				thisCheckpoint();
 			}
 		};
