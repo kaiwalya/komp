@@ -3,14 +3,13 @@
 
 #include "tutil.hpp"
 #include "stack.hpp"
-/*
- #include <stddef.h>
- #include <stdint.h>
- #include <string>
-*/
+#include <string>
+#include <memory>
+#include <vector>
 
 namespace komp
 {
+	
 	namespace mq
 	{
 		
@@ -18,53 +17,7 @@ namespace komp
 		class ctx_shared;
 		class ctx;
 
-		typedef std::function<void(ctx &)> func_type;
-		
-		class processor
-		{
-			func_type m_f;
-			koro::stack m_stack;
-		public:
-			processor(func_type & f):m_f(f)
-			{
-				
-			}
-		};
-		
-		struct message
-		{
-			virtual size_t size() const = 0;
-			virtual void setSize() = 0;
-			virtual const void * data() const = 0;
-			virtual void * data() = 0;
-		};
-		
-		struct message_queue_window
-		{
-			virtual void close() = 0;
-			virtual size_t size() = 0;
-			virtual void set_size(size_t) = 0;
-			virtual void slide(size_t) = 0;
-		};
-		
-		struct message_queue_read_window
-		{
-			virtual const message * getAt(size_t) = 0;
-		};
-		
-		struct message_queue_write_window
-		{
-			virtual message * getAt(size_t) = 0;
-		};
-		
-		class io
-		{
-			ctx & m_ctx;
-		public:
-			io(ctx & c);
-			io & operator = (const io & other);
-			~io();
-		};
+		typedef std::function<void(ctx &)> process;
 		
 		class ctx_shared: public thread::localizable<ctx_shared, ctx>
 		{
@@ -114,12 +67,11 @@ namespace komp
 			mutex m_workerShutdownMutex;
 			size_t m_nShutdownWorkers;
 			condition m_workerShuttingdownCondition;
-			condition m_workerShutdownCondition;
+			//condition m_workerShutdownCondition;
 		
 		public:
 			ctx_shared();
 			~ctx_shared();
-			processor * dispatch(std::function<void(ctx &)> & f);
 		};
 		
 		enum class ctx_role
@@ -135,12 +87,9 @@ namespace komp
 			~ctx();
 		private:
 			ctx_role m_role;
-			io m_io;
 		public:
 			ctx_role role() const;
-			io & current();
-			io dispatch(std::function<void(ctx &)> & f);
-			io dispatch(std::function<void(ctx &)> && f);
+			//void registerProcessor(std::string && name, process && proc);
 		};
 		
 		void test();

@@ -1,6 +1,7 @@
 #include "kompute.hpp"
 #include "komp.hpp"
 #include "log.hpp"
+#include <thread>
 
 namespace komp
 {
@@ -59,11 +60,22 @@ namespace komp
 			//This function should always be called from tlocalcontext_detach_locked,
 			//so we dont take the lock
 			//auto l = tsharedcontext_lock();
+			
+			//We create a copy of the worker info list here. The purpose is to ensure that
+			//all of them get the quit notification once. As soon as we notify one worker,
+			//it may modify the worker_info array, hence the copy.
+			//We dont lock the m_workerInfo, becuase the map itself wont change during copy
+			std::vector<decltype(m_workerinfo)::mapped_type> values;
 			for(auto &it : m_workerinfo)
 			{
-				auto worker_lock = lock(it.second->m_workerMutex);
-				it.second->m_quit = true;
-				it.second->m_workerCondition.notify_one();
+				values.push_back(it.second);
+			}
+			
+			for(auto &it : values)
+			{
+				auto worker_lock = lock(it->m_workerMutex);
+				it->m_quit = true;
+				it->m_workerCondition.notify_one();
 			}
 			//thislog("%s", "Shutdown triggered");
 		}
@@ -77,8 +89,9 @@ namespace komp
 				//thislog("%s, %d left", "Wait for pool shutdown", (int)(m_nWorkers - m_nShutdownWorkers));
 				m_workerShuttingdownCondition.wait(lShutdown);
 			}
-			m_nShutdownWorkers = 0;
-			m_workerShutdownCondition.notify_all();
+			//m_nShutdownWorkers = 0;
+			//m_workerShutdownCondition.notify_all();
+			thislog("%s", "Thread pool was shut down");
 		}
 		
 		void ctx_shared::bootPool()
@@ -143,11 +156,12 @@ namespace komp
 					//thislog("Worker (%d) woken up", (int)params->m_workerID);
 				}
 			}
-			
 
 			//Shutdown phase
 			{
+				#if LOG_ENABLED
 				size_t id = params->m_workerID;
+				#endif
 				thislog("Worker (%d) Stopping", (int)id);
 				auto lShutdown = lock(m_workerShutdownMutex);
 				{
@@ -158,24 +172,16 @@ namespace komp
 				m_nShutdownWorkers++;
 				m_workerShuttingdownCondition.notify_one();
 				thislog("Worker (%d) Shutting down", (int)id);
-				while(m_nShutdownWorkers)
-					m_workerShutdownCondition.wait(lShutdown);
-				thislog("Worker (%d) Shut down", (int)id);
+				//while(m_nShutdownWorkers)
+				//	m_workerShutdownCondition.wait(lShutdown);
+				//thislog("Worker (%d) Shut down", (int)id);
 				
 			}
-		}
-		
-		processor * ctx_shared::dispatch(std::function<void (ctx &)> &f)
-		{
-			auto proc =  new processor(f);
-			delete proc;
-			return nullptr;
 		}
 		
 		ctx::ctx(ctx_shared * shared, ctx_role r)
 		:thread::localized<ctx_shared, ctx>(shared)
 		,m_role(r)
-		,m_io(*this)
 		{
 			thisCheckpoint();
 			tsharedcontext()->tlocalcontext_attach(this);
@@ -192,46 +198,44 @@ namespace komp
 			return m_role;
 		}
 		
-		io ctx::dispatch(std::function<void (ctx &)> &f)
+		int randomWithMax(int max)
 		{
-			tsharedcontext()->dispatch(f);
-			return io(*this);
-		}
-		
-		io ctx::dispatch(std::function<void (ctx &)> &&f)
-		{
-			return dispatch(f);
-		}
-		
-		io & ctx::current()
-		{
-			return m_io;
-		}
-		
-		io::io(ctx & c):m_ctx(c)
-		{
-		}
-		
-		io::~io()
-		{
-			
-		}
-		
-		io & io::operator=(const komp::mq::io &other)
-		{
-			assert(false);
-			return *this;
+			return ((float)rand()/(float)RAND_MAX) * (float)max + 0.5f;
 		}
 		
 		void test()
 		{
+			const int nRandomizerIterations = 1;
+			const int nSharedContextsPerIteration = 10;
+			const int nMaxThreads = 16;
+			const int nMaxSleepNS = 1000;
+			for(int i = 0; i < nRandomizerIterations; i++)
 			{
-				ctx c(new ctx_shared);
-				auto io = c.dispatch([](ctx & cin){
-					auto io = cin.current();
-				});
+				srand(i);
+				for (int j = 0; j < nSharedContextsPerIteration; j++)
+				{
+					auto shared = new ctx_shared;
+					ctx c(shared);
+					std::vector<std::thread> threads;
+					for(int k = 0; k < randomWithMax(nMaxThreads); k++)
+					{
+						threads.emplace_back([=](){
+							ctx c(shared);
+							int nssleep = randomWithMax(nMaxSleepNS);
+							std::this_thread::sleep_for(std::chrono::nanoseconds(nssleep));
+						});
+					}
+					for(auto & t: threads)
+					{
+						t.join();
+					}
+					
+					//c.registerProcessor("test1", [] (ctx &) {
+					//	printf("In test1");
+					//});
+				}
 			}
-			funclog("%s", "TestFinished");
+			//funclog("%s", "Test Finished");
 		}
 	};
 };
