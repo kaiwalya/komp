@@ -1,0 +1,43 @@
+
+%pure-parser
+%{
+	#include "ParserCallback.hpp"
+
+	using namespace komp;
+	#include "stdio.h"
+%}
+%parse-param {komp::ParserCallback * parserCallback}
+%lex-param {komp::ParserCallback * parserCallback}
+%locations
+
+%union {
+	komp::grammar::Node node;
+}
+
+%start begin
+
+
+%token TERM_INTEGER TERM_STATEMENT TERM_OP_PLUS
+
+%left TERM_OP_PLUS
+
+%type <node> TERM_INTEGER TERM_STATEMENT TERM_OP_PLUS;
+
+
+%%
+
+begin:			statements						{printf("<<EOF>>\n");}
+;
+
+value:			TERM_INTEGER					{printf("%d ", $1.integerValue);}
+				|value TERM_OP_PLUS value		{printf("+");}
+;
+
+statements:		statement			
+				|statement statements
+
+statement:		TERM_STATEMENT 					{printf(";\n");}
+				|value TERM_STATEMENT 			{printf(";\n");}
+;
+
+%%
