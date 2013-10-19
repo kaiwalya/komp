@@ -1,10 +1,11 @@
 #include "komp/komp.hpp"
 #include <iostream>
 #include <assert.h>
+
 using namespace flow;
 using namespace flow::native;
 
-class HelloWorldSender: public BlockDeclaration{
+class HelloWorldSender: public BlockDefinition{
 	void defineInterface(InterfaceProgrammer & programmar) const {
 		programmar.setBlockType(BlockType::NoSideEffect);
 		programmar.setOutputInterface<Stream<Char>>();
@@ -21,7 +22,7 @@ class HelloWorldSender: public BlockDeclaration{
 	}
 };
 
-class HelloWorldReceiver: public BlockDeclaration{
+class HelloWorldReceiver: public BlockDefinition{
 	void defineInterface(InterfaceProgrammer & programmar) const {
 		programmar.setBlockType(BlockType::ExternalState);
 		programmar.setInputInterface<Stream<Char>>();
@@ -34,10 +35,12 @@ class HelloWorldReceiver: public BlockDeclaration{
 		}
 	}
 };
+#include <assert.h>
 
 int main(int argc, char ** argv) {
 	Context ctx;
-	ctx.createBlock<HelloWorldSender>();
-	ctx.createBlock<HelloWorldReceiver>();
+	auto b1 = ctx.createBlock<HelloWorldSender>();
+	auto b2 = ctx.createBlock<HelloWorldReceiver>();
+	ctx.join(b1, b2);
 }
 
