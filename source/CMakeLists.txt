@@ -16,8 +16,8 @@ set(PARSER_C ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp)
 add_custom_command(OUTPUT ${PARSER_H} ${PARSER_C}
 	DEPENDS ${PARSER_Y}
 	COMMAND bison -d --name-prefix komp_ParserCallback_ --file-prefix=parser ${PARSER_Y}
-	COMMAND cp parser.tab.cpp parser.cpp
-	COMMAND cp parser.tab.hpp parser.hpp
+	COMMAND mv parser.tab.cpp parser.cpp
+	COMMAND mv parser.tab.hpp parser.hpp
 )
 
 #Use flex to generate the scanner

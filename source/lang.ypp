@@ -11,7 +11,7 @@
 %locations
 
 %union {
-	komp::grammar::Node node;
+	komp::grammar::Node * node;
 }
 
 %start begin
@@ -26,15 +26,15 @@
 
 %%
 
-begin:			statements						{printf("<<EOF>>\n");}
+begin:			statements						{}
 ;
 
-value:			TERM_INTEGER					{printf("%d ", $1.integerValue);}
-				|value TERM_OP_PLUS value		{printf("+");}
+value:			TERM_INTEGER					{}
+				|value TERM_OP_PLUS value		{$$ = *$1 + *$2;}
 ;
 
 statements:		statement			
-				|statement statements
+				|statement statements			{}
 
 statement:		TERM_STATEMENT 					{printf(";\n");}
 				|value TERM_STATEMENT 			{printf(";\n");}
