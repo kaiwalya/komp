@@ -1,4 +1,4 @@
-#include "kaam/header.hpp"
+#include "komp/komp.hpp"
 #include <iostream>
 #include <assert.h>
 using namespace flow;
