@@ -14,6 +14,9 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_library(komp
 	include/komp/komp.hpp
 	komp.cpp
+	log.hpp
+	tutil.hpp
+	tutil.cpp
 )
 add_executable(komp-test
 	tests/simple.cpp
