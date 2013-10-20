@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define LOG_LEVEL 0
+#define LOG_LEVEL 1
 #if defined(LOG_LEVEL) && LOG_LEVEL > 0
 #define LOG_ENABLED 1
 #define thislog(fmt, ...) {\

@@ -2,9 +2,10 @@
 #include <vector>
 #include <map>
 #include <typeinfo>
-#include <thread>
 
-namespace flow {
+#include <tutil.hpp>
+
+namespace komp {
 	
 	using TypeIDs = uint64_t;
 	using DataType = std::vector<TypeIDs>;
@@ -63,11 +64,15 @@ namespace flow {
 	}
 	
 	class Context {
+
 		struct BlockInfo {
 			BlockDefinition * definition;
 		};
+		komp::thread::pool m_pool;
+		void worker();
 		std::map<BlockHandle, std::shared_ptr<BlockInfo>> m_blocks;
 	public:
+		Context();
 		template<typename BlockClass>
 		BlockHandle createBlock() {
 			std::shared_ptr<BlockInfo> bi(new BlockInfo);

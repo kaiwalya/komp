@@ -2,8 +2,8 @@
 #include <iostream>
 #include <assert.h>
 
-using namespace flow;
-using namespace flow::native;
+using namespace komp;
+using namespace komp::native;
 
 class HelloWorldSender: public BlockDefinition{
 	void defineInterface(InterfaceProgrammer & programmar) const {
@@ -38,6 +38,7 @@ class HelloWorldReceiver: public BlockDefinition{
 #include <assert.h>
 
 int main(int argc, char ** argv) {
+
 	Context ctx;
 	auto b1 = ctx.createBlock<HelloWorldSender>();
 	auto b2 = ctx.createBlock<HelloWorldReceiver>();

@@ -1,4 +1,14 @@
 #include "komp/komp.hpp"
 
-using namespace flow;
-using namespace flow::native;
+using namespace komp;
+using namespace komp::native;
+
+
+Context::Context(){
+	
+}
+
+
+void Context::worker() {
+
+}

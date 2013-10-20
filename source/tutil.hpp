@@ -13,10 +13,19 @@ namespace komp
 		class pool
 		{
 			std::vector<std::thread> m_pool;
+			void start();
+			std::mutex m_mWorkerEnter, m_mWorkerExit, m_mWorkerSchedule;
+			std::condition_variable m_cWorkerEnter, m_cWorkerExit, m_cWorkerSchedule;
+			size_t m_nWorkersEntered, m_nWorkersExited;
+			
+			//Projected by Schedular lock
+			std::vector<std::function<void(void)>> m_jobs;
+			bool m_bQuit;
+
+			using Lock = std::unique_lock<std::mutex>;
 		public:
-			pool(){}
-			void start(std::function<std::function<void(void)>(void)> & f);
-			void start(std::function<std::function<void(void)>(void)> && f);
+			pool();
+			void addJob(std::function<void(void)>);
 			~pool();
 		};
 		

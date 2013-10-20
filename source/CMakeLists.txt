@@ -4,11 +4,12 @@ project(komp)
 enable_testing()
 
 #Use C++11
-set(CMAKE_CXX_FLAGS "-std=c++11 -stdlib=libc++")
+set(CMAKE_CXX_FLAGS "-std=c++11 -stdlib=libc++ -g")
 set(CMAKE_EXE_LINKER_FLAGS "-std=c++11 -stdlib=libc++")
 set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_library(komp
