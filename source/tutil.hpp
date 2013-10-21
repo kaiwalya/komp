@@ -15,17 +15,29 @@ namespace komp
 			std::vector<std::thread> m_pool;
 			void start();
 			std::mutex m_mWorkerEnter, m_mWorkerExit, m_mWorkerSchedule;
-			std::condition_variable m_cWorkerEnter, m_cWorkerExit, m_cWorkerSchedule;
-			size_t m_nWorkersEntered, m_nWorkersExited;
+			std::condition_variable m_cWorkerEnter, m_cWorkerExit, m_cWorkerSchedule, m_cWorkerJobLess;
+			size_t m_nWorkersEntered, m_nWorkersExited, m_nJobsScheduledCurrent, m_nJobsScheduledTotal;
 			
 			//Projected by Schedular lock
 			std::vector<std::function<void(void)>> m_jobs;
 			bool m_bQuit;
 
 			using Lock = std::unique_lock<std::mutex>;
+			bool canQuit() {
+				bool areJobsExecuting = m_nJobsScheduledCurrent;
+				bool areJobsPending = m_jobs.size();
+				bool isMoreWorkPossible = areJobsPending || areJobsExecuting;
+				return (!isMoreWorkPossible);
+			}
+			
+			bool shouldQuit() {
+				return canQuit() && m_bQuit;
+			}
 		public:
 			pool();
-			void addJob(std::function<void(void)>);
+			void addJob(std::function<void(void)> &&);
+			void addJob(std::function<void(void)> &);
+			void stop();
 			~pool();
 		};
 		

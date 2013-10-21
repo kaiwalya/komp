@@ -1,6 +1,9 @@
 //#include <string>
 #include <vector>
+#include <queue>
+#include <deque>
 #include <map>
+#include <list>
 #include <typeinfo>
 
 #include <tutil.hpp>
@@ -16,8 +19,6 @@ namespace komp {
 	class InterfaceProgrammer;
 	class InvocationContext;
 	
-	using BlockHandle = void *;
-
 	enum BlockType {
 		NoSideEffect,
 		InternalState,
@@ -65,20 +66,85 @@ namespace komp {
 	
 	class Context {
 
+		using Mutex = std::mutex;
+		using Condition = std::condition_variable;
+		using Lock = std::unique_lock<Mutex>;
+		
+		Mutex m_mBlockCount;
+		Condition m_cBlockCount;
+		size_t m_nBlockCountTotal;
+		size_t m_nBlockCountCurrent;
+		
+		void blockCountIncr() {
+			Lock lock(m_mBlockCount);
+			m_nBlockCountCurrent++;
+			m_nBlockCountTotal++;
+		}
+		void blockCountDecr() {
+			Lock lock(m_mBlockCount);
+			m_nBlockCountCurrent--;
+			m_cBlockCount.notify_one();
+		}
+		void blockCountZero() {
+			Lock lock(m_mBlockCount);
+			while(m_nBlockCountCurrent) {
+				m_cBlockCount.wait(lock);
+			}
+		}
+		
+		enum class BlockState {
+			Initialize, Running, Finalize,
+		};
 		struct BlockInfo {
 			BlockDefinition * definition;
 		};
+		
+		using BlockInfoPtr = BlockInfo *;
+		using BlockInfoPtrList = std::list<BlockInfoPtr>;
+		using BlockInfoIter = BlockInfoPtrList::iterator;
+		
+		struct BlockListInfo {
+			BlockInfoPtrList m_list;
+			Mutex m_mutex;
+			BlockListInfo(){}
+			//BlockListInfo(const BlockListInfo &) {assert(false);};
+			Lock lock() {
+				return Lock(m_mutex);
+			}
+			BlockInfoPtrList & list() {
+				return m_list;
+			}
+		};
+		
+		
 		komp::thread::pool m_pool;
-		void worker();
-		std::map<BlockHandle, std::shared_ptr<BlockInfo>> m_blocks;
+		std::map<BlockState, std::shared_ptr<BlockListInfo>> m_blocks;
+		
+		BlockListInfo & findListInfo(BlockState forState) {
+			return *(m_blocks[forState].get());
+		}
+		void initialize(BlockInfoIter it);
+		void run(BlockInfoIter it);
+		void finalize(BlockInfoIter it);
 	public:
+		using BlockHandle = BlockInfoIter;
 		Context();
+		~Context();
 		template<typename BlockClass>
 		BlockHandle createBlock() {
-			std::shared_ptr<BlockInfo> bi(new BlockInfo);
+			blockCountIncr();
+			
+			auto bi = new BlockInfo;
 			bi->definition = new BlockClass();
-			m_blocks.emplace(nullptr, bi);
-			return nullptr;
+			auto & li = findListInfo(BlockState::Initialize);
+			auto lock = li.lock();
+			auto & list = li.list();
+			auto it = list.insert(list.begin(), bi);
+			assert(list.size());
+			m_pool.addJob([this, it](){
+				initialize(it);
+			});
+			return it;
 		}
 		void join(BlockHandle inputOfThis, BlockHandle outputOfThis) {}
 	};
@@ -126,5 +192,6 @@ namespace komp {
 	public:
 		virtual void defineInterface(InterfaceProgrammer & programmer) const = 0;
 		virtual void performDefinition(InvocationContext & ctx) = 0;
+		virtual ~BlockDefinition(){}
 	};
 };

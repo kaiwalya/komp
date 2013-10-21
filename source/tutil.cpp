@@ -15,6 +15,7 @@ namespace komp
 		{
 			m_nWorkersEntered = 0;
 			m_nWorkersExited = 0;
+			m_nJobsScheduledCurrent = 0;
 			auto nCores = std::thread::hardware_concurrency();
 			if (nCores == 0)
 			{
@@ -33,16 +34,27 @@ namespace komp
 					std::function<void(void)> job;
 					{
 						Lock lock(m_mWorkerSchedule);
-						while (!m_bQuit && !m_jobs.size()) {
+						//Quit only if there are no jobs executing or pending and we got external quit signal
+						while (!(shouldQuit()) && !m_jobs.size()) {
+							m_cWorkerJobLess.notify_one();
 							m_cWorkerSchedule.wait(lock);
 						}
-						if (m_bQuit) {
+						if (shouldQuit()) {
 							break;
 						}
+						assert(m_jobs.size());
 						job = m_jobs.back();
+						m_nJobsScheduledCurrent++;
+						m_nJobsScheduledTotal++;
 						m_jobs.pop_back();
 					}
+					
 					job();
+					
+					{
+						Lock lock(m_mWorkerSchedule);
+						m_nJobsScheduledCurrent--;
+					}
 				}
 				
 				{
@@ -67,17 +79,12 @@ namespace komp
 			}
 		}
 		
-		pool::pool()
-		{
-			start();
-		}
-		
-		
-		pool::~pool()
-		{
-
+		void pool::stop() {
 			{
-				Lock lock2(m_mWorkerSchedule);
+				Lock lock(m_mWorkerSchedule);
+				while (!canQuit()) {
+					m_cWorkerJobLess.wait(lock);
+				}
 				m_bQuit = true;
 				m_cWorkerSchedule.notify_all();
 			}
@@ -93,6 +100,31 @@ namespace komp
 				}
 			}
 			
+		}
+		
+		pool::pool():m_nJobsScheduledCurrent(0), m_nJobsScheduledTotal(0), m_bQuit(false)
+		{
+			start();
+		}
+		
+		
+		pool::~pool()
+		{
+			stop();
+			//thislog("m_nJobsScheduledTotal: %d", (int)m_nJobsScheduledTotal)
+		}
+		
+		void pool::addJob(std::function<void ()> && job) {
+			addJob(job);
+		}
+		
+		void pool::addJob(std::function<void ()> & job) {
+			{
+				Lock lock(m_mWorkerSchedule);
+				m_jobs.insert(m_jobs.begin(), job);
+				m_cWorkerSchedule.notify_one();
+				assert(m_jobs.size());
+			}
 		}
 		
 		class test_localize_local;
