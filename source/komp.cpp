@@ -2,7 +2,7 @@
 #include "log.hpp"
 
 using namespace komp;
-using namespace komp::native;
+using namespace komp::typ;
 
 
 Context::Context(){
@@ -31,15 +31,21 @@ void Context::initialize(BlockInfoIter it) {
 		assert(srcList.size());
 		destList.splice(destList.begin(), srcList, it);
 	}
+	
+	auto & bi = (**it);
+	InterfaceProgrammerImpl programmer(bi);
+	bi.definition->defineInterface(programmer);
+	
 	m_pool.addJob([this, it](){
 		run(it);
 	});
 }
 
 void Context::run(BlockInfoIter it) {
-
+	auto & bi = (**it);
 	InvocationContext ctx;
-	(**it).definition->performDefinition(ctx);
+	bi.definition->performDefinition(ctx);
+	
 	{
 		auto & srcli = findListInfo(BlockState::Running);
 		auto & destli = findListInfo(BlockState::Finalize);
@@ -68,3 +74,13 @@ void Context::finalize(BlockInfoIter it) {
 	delete bi;
 	blockCountDecr();
 }
+
+
+
+const TypeInfo T<Char>::typeInfo = {TypeType::Char};
+const TypeInfo T<Boolean>::typeInfo = {TypeType::Boolean};
+const TypeInfo T<Integer32>::typeInfo = {TypeType::Integer32};
+const TypeInfo T<Size>::typeInfo = {TypeType::Size};
+
+
+

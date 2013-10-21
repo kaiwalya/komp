@@ -6,7 +6,7 @@
 #include <unistd.h>
 
 using namespace komp;
-using namespace komp::native;
+using namespace komp::typ;
 
 int gCount;
 std::mutex gmutex;

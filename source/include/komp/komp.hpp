@@ -10,10 +10,6 @@
 
 namespace komp {
 	
-	using TypeIDs = uint64_t;
-	using DataType = std::vector<TypeIDs>;
-	using DataBusType = std::vector<DataType>;
-	
 	class BlockDefinition;
 	class Context;
 	class InterfaceProgrammer;
@@ -25,18 +21,16 @@ namespace komp {
 		ExternalState,
 	};
 	
-	namespace native {
+	namespace typ {
+		
+		enum class TypeType {
+			Boolean, Integer32, Size, Char, Array, Stream,
+		};
+		
 		using Boolean = bool *;
 		using Integer32 = int32_t *;
 		using Size = size_t *;
 		using Char = char *;
-		
-		template<typename Type, Size DimensionCount>
-		struct Array {
-			Size size[DimensionCount];
-			const Type data() const;
-			Type data();
-		};
 		
 		struct StreamGeneric {
 			//Window also implies that stream migh end with incomplete data
@@ -54,22 +48,163 @@ namespace komp {
 		
 		template<typename Type>
 		struct Stream : StreamGeneric{
-			
-			
 			//Readable Streams will return null when
 			//stream has ended but there is not enough
 			//data to full the window
 			Type data() {return *(Type *)genericData();}
-			
 		};
+		
+		struct TypeInfo {
+			const TypeType typeType;
+			TypeInfo(TypeType typeType):typeType(typeType) {}
+		};
+		
+		struct TypeInfoStream: public TypeInfo {
+			const TypeInfo & inner;
+			TypeInfoStream(const TypeInfo & inner):TypeInfo(TypeType::Stream), inner(inner){}
+		};
+		
+		template<typename Type>
+		struct T {
+		};
+		
+		template<typename Inner>
+		struct T<Stream<Inner>> {
+			static const TypeInfoStream typeInfo;
+		};
+		
+		template<>
+		struct T<Boolean> {
+			static const TypeInfo typeInfo;
+		};
+		
+		template<>
+		struct T<Char> {
+			static const TypeInfo typeInfo;
+		};
+		template<>
+		struct T<Integer32> {
+			static const TypeInfo typeInfo;
+		};
+		template<>
+		struct T<Size> {
+			static const TypeInfo typeInfo;
+		};
+		
+		template<typename Inner>
+		const TypeInfoStream T<Stream<Inner>>::typeInfo = {T<Inner>::typeInfo};
+		
 	}
+	
+	class InterfaceProgrammer {
+	protected:
+		virtual void setInputInterface(const typ::TypeInfo & info) = 0;
+		virtual void setOutputInterface(const typ::TypeInfo & info) = 0;
+	public:
+		template<typename TBus>
+		void setInputInterface() {
+			setInputInterface(typ::T<TBus>::typeInfo);
+		}
+		
+		template<typename TBus>
+		void setOutputInterface() {
+			setOutputInterface(typ::T<TBus>::typeInfo);
+		}
+		
+		virtual void setBlockType(BlockType type) = 0;
+		virtual ~InterfaceProgrammer() {}
+	};
+	
+	
+	//Allows block instance to get data it is getting called with
+	//Input bus and output bus
+	//as well as any internal state.
+	class InvocationContext {
+	protected:
+		void * genericGetInput(typ::Size) {
+			return nullptr;
+		}
+		
+		void * genericGetOutput(typ::Size) {
+			return nullptr;
+		}
+	public:
+		//Internal State
+		//getInernalState
+		
+		template<typename Type>
+		Type & getInput(typ::Size index) {
+			return *(Type *)genericGetInput(index);
+		}
+		
+		template<typename Type>
+		Type & getOutput(typ::Size index) {
+			return *(Type *)genericGetOutput(index);
+		}
+	};
 	
 	class Context {
 
 		using Mutex = std::mutex;
 		using Condition = std::condition_variable;
 		using Lock = std::unique_lock<Mutex>;
+
+		enum class BlockState {
+			Initialize, Running, Finalize,
+		};
+		struct BlockInfo {
+			BlockDefinition * definition;
+			BlockType type;
+			const typ::TypeInfo * inputInfo;
+			const typ::TypeInfo * outputInfo;
+		};
 		
+		using BlockInfoPtr = BlockInfo *;
+		using BlockInfoPtrList = std::list<BlockInfoPtr>;
+		using BlockInfoIter = BlockInfoPtrList::iterator;
+		
+		struct BlockListInfo {
+			BlockInfoPtrList m_list;
+			Mutex m_mutex;
+			BlockListInfo(){}
+			//BlockListInfo(const BlockListInfo &) {assert(false);};
+			Lock lock() {
+				return Lock(m_mutex);
+			}
+			BlockInfoPtrList & list() {
+				return m_list;
+			}
+		};
+		
+		
+		class InterfaceProgrammerImpl:public InterfaceProgrammer {
+			BlockInfo & info;
+		public:
+			InterfaceProgrammerImpl(BlockInfo & info):info(info) {
+			}
+			virtual void setBlockType(BlockType type) {
+				this->info.type = type;
+			}
+			virtual void setInputInterface(const typ::TypeInfo & info) {
+				this->info.inputInfo = &info;
+			}
+			virtual void setOutputInterface(const typ::TypeInfo & info) {
+				this->info.outputInfo = &info;
+			}
+		};
+
+		
+		
+		komp::thread::pool m_pool;
+		std::map<BlockState, std::shared_ptr<BlockListInfo>> m_blocks;
+		
+		BlockListInfo & findListInfo(BlockState forState) {
+			return *(m_blocks[forState].get());
+		}
+		void initialize(BlockInfoIter it);
+		void run(BlockInfoIter it);
+		void finalize(BlockInfoIter it);
+				
 		Mutex m_mBlockCount;
 		Condition m_cBlockCount;
 		size_t m_nBlockCountTotal;
@@ -91,41 +226,6 @@ namespace komp {
 				m_cBlockCount.wait(lock);
 			}
 		}
-		
-		enum class BlockState {
-			Initialize, Running, Finalize,
-		};
-		struct BlockInfo {
-			BlockDefinition * definition;
-		};
-		
-		using BlockInfoPtr = BlockInfo *;
-		using BlockInfoPtrList = std::list<BlockInfoPtr>;
-		using BlockInfoIter = BlockInfoPtrList::iterator;
-		
-		struct BlockListInfo {
-			BlockInfoPtrList m_list;
-			Mutex m_mutex;
-			BlockListInfo(){}
-			//BlockListInfo(const BlockListInfo &) {assert(false);};
-			Lock lock() {
-				return Lock(m_mutex);
-			}
-			BlockInfoPtrList & list() {
-				return m_list;
-			}
-		};
-		
-		
-		komp::thread::pool m_pool;
-		std::map<BlockState, std::shared_ptr<BlockListInfo>> m_blocks;
-		
-		BlockListInfo & findListInfo(BlockState forState) {
-			return *(m_blocks[forState].get());
-		}
-		void initialize(BlockInfoIter it);
-		void run(BlockInfoIter it);
-		void finalize(BlockInfoIter it);
 	public:
 		using BlockHandle = BlockInfoIter;
 		Context();
@@ -149,43 +249,6 @@ namespace komp {
 		void join(BlockHandle inputOfThis, BlockHandle outputOfThis) {}
 	};
 	
-	class InterfaceProgrammer {
-	public:
-		template<typename TArray>
-		void setInputInterface() {}
-		
-		template<typename TArray>
-		void setOutputInterface() {}
-		
-		void setBlockType(BlockType type) {};
-	};
-	
-	//Allows block instance to get data it is getting called with
-	//Input bus and output bus
-	//as well as any internal state.
-	class InvocationContext {
-	protected:
-		void * genericGetInput(native::Size) {
-			return nullptr;
-		}
-		
-		void * genericGetOutput(native::Size) {
-			return nullptr;
-		}
-	public:
-		//Internal State
-		//getInernalState
-		
-		template<typename Type>
-		Type & getInput(native::Size index) {
-			return *(Type *)genericGetInput(index);
-		}
-		
-		template<typename Type>
-		Type & getOutput(native::Size index) {
-			return *(Type *)genericGetOutput(index);
-		}
-	};
 	
 	//All exposed blocks need to implement this class;
 	class BlockDefinition{
