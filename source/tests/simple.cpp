@@ -23,37 +23,27 @@ void decr() {
 class HelloWorldSender: public BlockDefinition{
 	void defineInterface(InterfaceProgrammer & programmar) const {
 		programmar.setBlockType(BlockType::NoSideEffect);
-		programmar.setOutputInterface<Stream<Char>>();
 	}
 	
 	void performDefinition(InvocationContext & ctx) {
-		incr();
-		/*
-		auto stream = ctx.getOutput<Stream<Char>>(0);
-		stream.next();
+		auto & stream = ctx.getOutput<char []>(0);
 		char msg[] = "hello world!\n";
 		for (auto & c: msg) {
-			*stream.data() = c;
-			stream.next();
+			stream << c;
 		}
-		 */
 	}
 };
 
 class HelloWorldReceiver: public BlockDefinition{
 	void defineInterface(InterfaceProgrammer & programmar) const {
 		programmar.setBlockType(BlockType::ExternalState);
-		programmar.setInputInterface<Stream<Char>>();
 	}
 	
 	void performDefinition(InvocationContext & ctx) {
-		decr();
-		/*
-		auto & stream = ctx.getInput<Stream<Char>>(0);
-		while(stream.next()) {
-			std::cout << *stream.data();
+		auto & stream = ctx.getInput<char []>(0);
+		for (auto it: stream) {
+			std::cout << *it;
 		}
-		 */
 	}
 };
 #include <assert.h>

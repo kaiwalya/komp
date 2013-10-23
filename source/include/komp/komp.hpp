@@ -25,15 +25,18 @@ namespace komp {
 	protected:
 		virtual void setInputInterface(const typ::TypeInfo & info) = 0;
 		virtual void setOutputInterface(const typ::TypeInfo & info) = 0;
+		typ::TypeRegistry & m_reg;
 	public:
+		InterfaceProgrammer(typ::TypeRegistry & reg):m_reg(reg){}
+		
 		template<typename TBus>
 		void setInputInterface() {
-			setInputInterface(typ::T<TBus>::typeInfo);
+			setInputInterface(m_reg.findTypeInfo<TBus>());
 		}
 		
 		template<typename TBus>
 		void setOutputInterface() {
-			setOutputInterface(typ::T<TBus>::typeInfo);
+			setOutputInterface(m_reg.findTypeInfo<TBus>());
 		}
 		
 		virtual void setBlockType(BlockType type) = 0;
@@ -46,25 +49,18 @@ namespace komp {
 	//as well as any internal state.
 	class InvocationContext {
 	protected:
-		void * genericGetInput(typ::Size) {
-			return nullptr;
-		}
-		
-		void * genericGetOutput(typ::Size) {
-			return nullptr;
-		}
 	public:
 		//Internal State
 		//getInernalState
 		
 		template<typename Type>
-		Type & getInput(typ::Size index) {
-			return *(Type *)genericGetInput(index);
+		auto getInput(size_t index) -> void *{
+
 		}
 		
 		template<typename Type>
-		Type & getOutput(typ::Size index) {
-			return *(Type *)genericGetOutput(index);
+		auto getOutput(size_t index) -> void *{
+			return nullptr;
 		}
 	};
 	
@@ -105,7 +101,7 @@ namespace komp {
 		class InterfaceProgrammerImpl:public InterfaceProgrammer {
 			BlockInfo & info;
 		public:
-			InterfaceProgrammerImpl(BlockInfo & info):info(info) {
+			InterfaceProgrammerImpl(typ::TypeRegistry & reg, BlockInfo & info):InterfaceProgrammer(reg), info(info) {
 			}
 			virtual void setBlockType(BlockType type) {
 				this->info.type = type;
@@ -118,7 +114,6 @@ namespace komp {
 			}
 		};
 
-		
 		
 		komp::thread::pool m_pool;
 		std::map<BlockState, std::shared_ptr<BlockListInfo>> m_blocks;
@@ -151,6 +146,8 @@ namespace komp {
 				m_cBlockCount.wait(lock);
 			}
 		}
+		
+		typ::TypeRegistry m_typeRegistry;
 	public:
 		using BlockHandle = BlockInfoIter;
 		Context();

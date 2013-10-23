@@ -5,12 +5,27 @@
 #include <stdlib.h>
 #include <string>
 #include <type_traits>
+#include <map>
 
 namespace komp {
-	namespace type {
-
+	namespace typ {
+		
+		
+		enum class TypeType {
+			Boolean, Integer32, Character, Array, Stream,
+		};
+		
+		struct TypeInfo {
+			TypeType type;
+			const TypeInfo * innerUnitInfo;
+		};
+		
+		
 		template<typename TNative>
 		struct Void;
+		
+		template<typename TNative>
+		struct Boolean;
 		
 		template<typename TNative>
 		struct Character;
@@ -59,6 +74,16 @@ namespace komp {
 		//Stream
 		template<typename TInner, typename TNative>
 		struct Stream {
+		private:
+			static const TypeInfo info;
+		public:
+			static const TypeInfo & getTypeInfo() { return info; }
+		};
+		
+		template<typename TNative, typename TInner>
+		const TypeInfo Stream<TNative, TInner>::info = {
+			TypeType::Stream,
+			&TInner::getTypeInfo()
 		};
 		
 		
@@ -85,6 +110,10 @@ namespace komp {
 		};
 		
 		//Select Basic
+		template<typename Next> struct ChainSelectBasic<bool, Next> {
+			using Type = Boolean<bool>;
+		};
+		
 		template<typename Next> struct ChainSelectBasic<int, Next> {
 			using Type = Integer32<int>;
 		};
@@ -93,7 +122,30 @@ namespace komp {
 			using Type = Character<char>;
 		};
 		
+		template<typename TNative, TypeType type>
+		struct Basic {
+		private:
+			static const TypeInfo info;
+		public:
+			static const TypeInfo & getTypeInfo() {return info;}
+		};
 		
+		template<typename TNative, TypeType type>
+		const TypeInfo Basic<TNative, type>::info = {
+			type,
+			nullptr
+		};
+		
+		template<typename TNative>
+		struct Boolean: Basic<TNative, TypeType::Boolean> {};
+		
+		
+		template<typename TNative>
+		struct Character: Basic<TNative, TypeType::Character> {};
+		
+		
+		template<typename TNative>
+		struct Integer32: Basic<TNative, TypeType::Integer32> {};
 		
 		
 		//Converts a Native Type to Managed Type
@@ -106,80 +158,22 @@ namespace komp {
 		using Managed = typename FindManaged<TIn>::Res;
 		
 		
-	}
-	namespace typ {
-		
-		enum class TypeType {
-			Boolean, Integer32, Size, Char, Array, Stream,
-		};
-		
-		using Boolean = bool *;
-		using Integer32 = int32_t *;
-		using Size = size_t *;
-		using Char = char *;
-		
-		struct StreamGeneric {
-			//Window also implies that stream migh end with incomplete data
-			//Take that into account when designing this API
-			void setWindow(Size sz) {}
+		struct TypeRegistry {
+			using TypeID = decltype(std::declval<std::type_info>().hash_code());
 			
-			//Inititalizes the stream, gets more data to send receive;
-			bool next() {return false;}
+			template<typename T>
+			const TypeInfo & findTypeInfo() {
+
+				auto id = typeid(T).hash_code();
+				if (m_typeInfoMap.find(id) == m_typeInfoMap.end()) {
+					m_typeInfoMap.emplace(id, Managed<T>::getTypeInfo());
+				}
+				return m_typeInfoMap[id];
+			}
 			
-			//Will send EOF to following stream
-			void close() {}
-			
-			void * genericData() {return nullptr;}
+		private:
+			std::map<TypeID, const TypeInfo &> m_typeInfoMap;
 		};
-		
-		template<typename Type>
-		struct Stream : StreamGeneric{
-			//Readable Streams will return null when
-			//stream has ended but there is not enough
-			//data to full the window
-			Type data() {return *(Type *)genericData();}
-		};
-		
-		struct TypeInfo {
-			const TypeType typeType;
-			TypeInfo(TypeType typeType):typeType(typeType) {}
-		};
-		
-		struct TypeInfoStream: public TypeInfo {
-			const TypeInfo & inner;
-			TypeInfoStream(const TypeInfo & inner):TypeInfo(TypeType::Stream), inner(inner){}
-		};
-		
-		template<typename Type>
-		struct T {
-		};
-		
-		template<typename Inner>
-		struct T<Stream<Inner>> {
-			static const TypeInfoStream typeInfo;
-		};
-		
-		template<>
-		struct T<Boolean> {
-			static const TypeInfo typeInfo;
-		};
-		
-		template<>
-		struct T<Char> {
-			static const TypeInfo typeInfo;
-		};
-		template<>
-		struct T<Integer32> {
-			static const TypeInfo typeInfo;
-		};
-		template<>
-		struct T<Size> {
-			static const TypeInfo typeInfo;
-		};
-		
-		template<typename Inner>
-		const TypeInfoStream T<Stream<Inner>>::typeInfo = {T<Inner>::typeInfo};
-		
 	}
 }
 
