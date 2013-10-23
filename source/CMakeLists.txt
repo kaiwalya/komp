@@ -17,16 +17,16 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_library(komp
 	include/komp/komp.hpp
+	include/komp/typ.hpp
 	komp.cpp
 	log.hpp
 	tutil.hpp
 	tutil.cpp
 )
-add_executable(komp-test
-	tests/simple.cpp
-)
-target_link_libraries(komp-test
-	komp
-)
+add_executable(testKomp tests/simple.cpp)
+target_link_libraries(testKomp komp)
+add_executable(testTyp tests/testTyp.cpp)
+target_link_libraries(testTyp komp)
 
-add_test(komp-test komp-test)
+add_test(testKomp testKomp)
+add_test(testTyp testTyp)

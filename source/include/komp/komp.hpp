@@ -5,7 +5,7 @@
 #include <map>
 #include <list>
 #include <typeinfo>
-
+#include "typ.hpp"
 #include <tutil.hpp>
 
 namespace komp {
@@ -20,81 +20,6 @@ namespace komp {
 		InternalState,
 		ExternalState,
 	};
-	
-	namespace typ {
-		
-		enum class TypeType {
-			Boolean, Integer32, Size, Char, Array, Stream,
-		};
-		
-		using Boolean = bool *;
-		using Integer32 = int32_t *;
-		using Size = size_t *;
-		using Char = char *;
-		
-		struct StreamGeneric {
-			//Window also implies that stream migh end with incomplete data
-			//Take that into account when designing this API
-			void setWindow(Size sz) {}
-			
-			//Inititalizes the stream, gets more data to send receive;
-			bool next() {return false;}
-			
-			//Will send EOF to following stream
-			void close() {}
-			
-			void * genericData() {return nullptr;}
-		};
-		
-		template<typename Type>
-		struct Stream : StreamGeneric{
-			//Readable Streams will return null when
-			//stream has ended but there is not enough
-			//data to full the window
-			Type data() {return *(Type *)genericData();}
-		};
-		
-		struct TypeInfo {
-			const TypeType typeType;
-			TypeInfo(TypeType typeType):typeType(typeType) {}
-		};
-		
-		struct TypeInfoStream: public TypeInfo {
-			const TypeInfo & inner;
-			TypeInfoStream(const TypeInfo & inner):TypeInfo(TypeType::Stream), inner(inner){}
-		};
-		
-		template<typename Type>
-		struct T {
-		};
-		
-		template<typename Inner>
-		struct T<Stream<Inner>> {
-			static const TypeInfoStream typeInfo;
-		};
-		
-		template<>
-		struct T<Boolean> {
-			static const TypeInfo typeInfo;
-		};
-		
-		template<>
-		struct T<Char> {
-			static const TypeInfo typeInfo;
-		};
-		template<>
-		struct T<Integer32> {
-			static const TypeInfo typeInfo;
-		};
-		template<>
-		struct T<Size> {
-			static const TypeInfo typeInfo;
-		};
-		
-		template<typename Inner>
-		const TypeInfoStream T<Stream<Inner>>::typeInfo = {T<Inner>::typeInfo};
-		
-	}
 	
 	class InterfaceProgrammer {
 	protected:
