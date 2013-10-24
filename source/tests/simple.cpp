@@ -26,7 +26,8 @@ class HelloWorldSender: public BlockDefinition{
 	}
 	
 	void performDefinition(InvocationContext & ctx) {
-		auto & stream = ctx.getOutput<char []>(0);
+		incr();
+		auto stream = ctx.getOutput<char[]>(0);
 		char msg[] = "hello world!\n";
 		for (auto & c: msg) {
 			stream << c;
@@ -40,10 +41,11 @@ class HelloWorldReceiver: public BlockDefinition{
 	}
 	
 	void performDefinition(InvocationContext & ctx) {
-		auto & stream = ctx.getInput<char []>(0);
-		for (auto it: stream) {
-			std::cout << *it;
-		}
+		decr();
+//		auto & stream = ctx.getInput<char []>(0);
+//		for (auto it: stream) {
+//			std::cout << *it;
+//		}
 	}
 };
 #include <assert.h>

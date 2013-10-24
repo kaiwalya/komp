@@ -72,11 +72,13 @@ namespace komp {
 		};
 		
 		//Stream
-		template<typename TInner, typename TNative>
+		template<typename TNative, typename TInner>
 		struct Stream {
 		private:
 			static const TypeInfo info;
 		public:
+			using NativeType = TNative;
+			using UnitType = TInner;
 			static const TypeInfo & getTypeInfo() { return info; }
 		};
 		
@@ -104,9 +106,9 @@ namespace komp {
 			static const size_t nTotalUnits = std::extent<T>::value;
 		};
 		//Array
-		template<typename TInner, typename TManaged>
+		template<typename TNative, typename TManaged>
 		struct Array {
-			static const size_t nTotalUnits = ArrayUnitCounter<TInner>::nTotalUnits;
+			static const size_t nTotalUnits = ArrayUnitCounter<TNative>::nTotalUnits;
 		};
 		
 		//Select Basic
@@ -127,6 +129,7 @@ namespace komp {
 		private:
 			static const TypeInfo info;
 		public:
+			using NativeType = TNative;
 			static const TypeInfo & getTypeInfo() {return info;}
 		};
 		

@@ -44,25 +44,87 @@ namespace komp {
 	};
 	
 	
+	namespace data {
+		
+		enum class Direction {
+			In, Out
+		};
+		template<typename TNative, typename TManaged>
+		struct StreamTypes {
+			using NativeType = TNative;
+			using UnitType = typename TManaged::UnitType;
+			using NativeUnitType = typename UnitType::NativeType;
+			using Storage = std::queue<NativeUnitType>;
+		};
+		template<typename TNative, typename TManaged>
+		struct InputStream;
+		template<typename TNative, typename TManaged>
+		struct OutputStream;
+		
+		template<typename TNative, typename TManaged>
+		struct InputStream{
+			using Types = StreamTypes<TNative, TManaged>;
+		private:
+			InputStream();
+			void acceptPayload(std::queue<typename Types::NativeUnitType> data);
+		};
+		
+		template<typename TNative, typename TManaged>
+		struct OutputStream{
+			using Types = StreamTypes<TNative, TManaged>;
+			OutputStream() {}
+			
+			OutputStream & operator << (const typename Types::NativeUnitType & val) {
+				data.push(val);
+				return *this;
+			}
+			
+			
+		private:
+			std::queue<typename Types::NativeUnitType> data;
+		};
+		
+		template<typename TManaged, Direction d>
+		struct FindManaged {
+			using Type = void;
+		};
+		
+		template<typename TNative, typename TInner>
+		struct FindManaged<typ::Stream<TNative, TInner>, Direction::Out> {
+			using Type = OutputStream<TNative, typ::Stream<TNative, TInner>>;
+		};
+		template<typename TNative, typename TInner>
+		struct FindManaged<typ::Stream<TNative, TInner>, Direction::In> {
+			using Type = InputStream<TNative, typ::Stream<TNative, TInner>>;
+		};
+		
+		template<typename T, Direction d>
+		using Managed = typename FindManaged<typ::Managed<T>, d>::Type;
+	}
+	
 	//Allows block instance to get data it is getting called with
 	//Input bus and output bus
 	//as well as any internal state.
 	class InvocationContext {
 	protected:
+
 	public:
 		//Internal State
 		//getInernalState
 		
 		template<typename Type>
-		auto getInput(size_t index) -> void *{
-
+		auto getInput(size_t index) -> data::Managed<Type, data::Direction::In>{
+			
 		}
 		
 		template<typename Type>
-		auto getOutput(size_t index) -> void *{
-			return nullptr;
+		auto getOutput(size_t index) -> data::Managed<Type, data::Direction::Out>{
+			using Ret = data::Managed<Type, data::Direction::Out>;
+			Ret r;
+			return r;
 		}
 	};
+	
 	
 	class Context {
 
@@ -73,6 +135,7 @@ namespace komp {
 		enum class BlockState {
 			Initialize, Running, Finalize,
 		};
+		
 		struct BlockInfo {
 			BlockDefinition * definition;
 			BlockType type;
